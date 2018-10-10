@@ -1,0 +1,13 @@
+catches:
+  catch_common: 99999999997
+  catch_epic: 999999999
+  catch_legendary: 99999999999998
+  catch_rare: 10000000
+  total_catch: 10000000000
+items:
+  bait: 1000000000000000024
+  rod_lvl: 9999999999999999999999
+user:
+  level: 50
+  lvl_progress: 60
+  name: fISH

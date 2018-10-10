@@ -1,0 +1,13 @@
+catches:
+  catch_common: -17
+  catch_epic: 5
+  catch_legendary: 4
+  catch_rare: 11
+  total_catch: 27
+items:
+  bait: 26
+  rod_lvl: 3
+user:
+  level: 2
+  lvl_progress: 35
+  name: Ivar_

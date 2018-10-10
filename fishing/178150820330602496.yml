@@ -1,0 +1,13 @@
+catches:
+  catch_common: 1
+  catch_epic: 0
+  catch_legendary: 0
+  catch_rare: 0
+  total_catch: 1
+items:
+  bait: 6
+  rod_lvl: 1
+user:
+  level: 1
+  lvl_progress: 5
+  name: herra_kissa
