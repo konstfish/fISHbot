@@ -46,17 +46,20 @@ print("   /-_____-\\")
 
 print(str(version) + " starting up")
 
-#startup_extentions = ["cogs.music", "cogs.owstats", "cogs.osu", "cogs.fishfacts", "cogs.memes", "cogs.translate", "cogs.general", "cogs.wikis", "cogs.fishing", "cogs.admin"]
-bot = commands.Bot(command_prefix='f!')
+startup_extentions = ["cogs.music", "cogs.owstats", "cogs.osu", "cogs.fishfacts", "cogs.memes", "cogs.translate", "cogs.general", "cogs.wikis", "cogs.fishing", "cogs.admin"]
+
+intents = discord.Intents.default()
+
+bot = commands.Bot(command_prefix='f!', intents=intents)
 
 @bot.event
 async def on_ready():
     print("Logged in as: " + str(bot.user.name))
     print("ID: " + str(bot.user.id))
     print(str(version) + " loaded")
-    await bot.change_presence(game=discord.Game(name='on konst.fish/bot | f!help', url="https://konst.fish", type=1))
+    #await bot.change_presence(game=discord.Game(name='on konst.fish/bot | f!help', url="https://konst.fish", type=1))
     print("Bot live in these Servers:")
-    for server in bot.servers:
+    for server in bot.guilds:
         print(server, end=', ')
     print("")
 
