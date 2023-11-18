@@ -7,6 +7,7 @@ import {
   InteractionResponseType,
   InteractionType,
   verifyKey,
+  InteractionResponseFlags
 } from 'discord-interactions';
 import { FISH_COMMAND, STATS_COMMAND } from './commands.js';
 
@@ -62,6 +63,7 @@ router.post('/', async (request, env) => {
   if (interaction.type === InteractionType.APPLICATION_COMMAND) {
     switch (interaction.data.name.toLowerCase()) {
       case FISH_COMMAND.name.toLowerCase(): {
+
         const fishList = generateFish();
         const pickFish = Math.floor(Math.random() * fishList.length);
 
@@ -75,8 +77,6 @@ router.post('/', async (request, env) => {
 
         const fishingMessage = `Started fishing with a Level ${userData.rodLevel}🎣 for ${fishList[pickFish]}`;
 
-        console.log(request);
-
         return new JsonResponse({
           type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
           data: {
@@ -84,7 +84,7 @@ router.post('/', async (request, env) => {
             components: [
               {
                 type: 1,
-                components: generateFishButtons(fishList),
+                components: generateFishButtons(fishList, interaction.member.user.id),
               },
             ],
           },
@@ -111,6 +111,20 @@ router.post('/', async (request, env) => {
         return new JsonResponse({ error: 'Unknown Type' }, { status: 400 });
     }
   } else if (interaction.type === InteractionType.MESSAGE_COMPONENT) {
+    // check if pressed button id corresponds with user id
+    console.log(interaction.data.custom_id)
+    console.log(interaction.member.user.id)
+    console.log(interaction.data.custom_id.split('-')[0] !== interaction.member.user.id)
+    if(interaction.data.custom_id.split('-')[0] !== interaction.member.user.id) {
+      return new JsonResponse({
+        type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+        data: {
+          content: "Don't try to catch someone else's fish!",
+          flags: InteractionResponseFlags.EPHEMERAL,
+        },
+      });
+    }
+  
     const succ = await checkFishingSuccess(
       env,
       interaction.member.user.id,
@@ -128,7 +142,6 @@ router.post('/', async (request, env) => {
       message = succ.message;
     }
 
-    // Send a response to the button click
     return new JsonResponse({
       type: InteractionResponseType.UPDATE_MESSAGE,
       data: {

@@ -15,7 +15,7 @@ export function generateFish() {
   return fish;
 }
 
-export function generateFishButtons(fishList) {
+export function generateFishButtons(fishList, userId) {
   var fishActions = [];
 
   for (var i = 0; i < fishList.length; i++) {
@@ -23,7 +23,7 @@ export function generateFishButtons(fishList) {
       type: 2,
       label: '',
       style: ButtonStyleTypes.PRIMARY,
-      custom_id: 'f' + i,
+      custom_id: userId + '-' + i,
       emoji: {
         name: fishList[i],
       },

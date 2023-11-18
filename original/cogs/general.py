@@ -171,7 +171,7 @@ class general:
               "but don't worry, if there is one, he'll be on your team just so you would have an easy loss : ) " \
               "In conclusion, my parents beat me and that gave me a mental disorder where I can't play mercy because" \
               " she is too boring but so is Reinhardt but I don't see too many main tanks switching to something more " \
-              "fun because they're not fucking retarded and want to actually win"
+              "fun because they're not fucking xxx and want to actually win"
         #em = discord.Embed(title=(str(out)), description="", colour=0x3D3D5D)
         tmp = await self.bot.say(out)
         await asyncio.sleep(30)

@@ -50,8 +50,6 @@ function fishRandomness() {
   const fishType = Math.floor(Math.random() * 100);
   if (fishType < 50) {
     return 'common';
-  } else if (fishType < 75) {
-    return 'uncommon';
   } else if (fishType < 90) {
     return 'rare';
   } else if (fishType < 99) {
@@ -66,7 +64,7 @@ export async function checkFishingSuccess(env, id, fishPick) {
   const time = new Date().getTime();
 
   if (time - data.date <= FISH_TIME) {
-    if ('f' + data.pick === fishPick) {
+    if (id + '-' + data.pick === fishPick) {
       const fishType = fishRandomness();
       await setUserData(env, id, fishType);
 
