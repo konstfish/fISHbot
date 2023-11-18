@@ -1,6 +1,6 @@
 # fISHbot
 
-Revival of my first ever project. See original/ for the source code from 2017. Recently rediscovered the code & since most of the old Discord API was deprecated & my bot didn't work anymore I took this as a chance to learn Cloudflare workers & familiarize myself with serverless.
+Revival of my first ever project. See `original/` for the source code from 2017. Recently rediscovered the code & since most of the old Discord API was deprecated & my bot didn't work anymore I took this as a chance to learn Cloudflare workers & familiarize myself with serverless.
 
 Add the bot: https://fishbot.konstfish.workers.dev/
 
