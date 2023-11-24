@@ -7,7 +7,7 @@ import {
   InteractionResponseType,
   InteractionType,
   verifyKey,
-  InteractionResponseFlags
+  InteractionResponseFlags,
 } from 'discord-interactions';
 import { FISH_COMMAND, STATS_COMMAND } from './commands.js';
 
@@ -75,7 +75,7 @@ router.post('/', async (request, env) => {
           pickFish,
         );
 
-        const fishingMessage = `Started fishing with a Level ${userData.rodLevel}🎣 for ${fishList[pickFish]}`;
+        const fishingMessage = `Started fishing with a level ${userData.rodLevel} 🎣 for ${fishList[pickFish]}`;
 
         return new JsonResponse({
           type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
@@ -84,7 +84,10 @@ router.post('/', async (request, env) => {
             components: [
               {
                 type: 1,
-                components: generateFishButtons(fishList, interaction.member.user.id),
+                components: generateFishButtons(
+                  fishList,
+                  interaction.member.user.id,
+                ),
               },
             ],
           },
@@ -112,10 +115,9 @@ router.post('/', async (request, env) => {
     }
   } else if (interaction.type === InteractionType.MESSAGE_COMPONENT) {
     // check if pressed button id corresponds with user id
-    console.log(interaction.data.custom_id)
-    console.log(interaction.member.user.id)
-    console.log(interaction.data.custom_id.split('-')[0] !== interaction.member.user.id)
-    if(interaction.data.custom_id.split('-')[0] !== interaction.member.user.id) {
+    if (
+      interaction.data.custom_id.split('-')[0] !== interaction.member.user.id
+    ) {
       return new JsonResponse({
         type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
         data: {
@@ -124,7 +126,7 @@ router.post('/', async (request, env) => {
         },
       });
     }
-  
+
     const succ = await checkFishingSuccess(
       env,
       interaction.member.user.id,
