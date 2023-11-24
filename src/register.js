@@ -1,4 +1,4 @@
-import {FISH_COMMAND, STATS_COMMAND } from './commands.js';
+import { FISH_COMMAND, STATS_COMMAND, FACT_COMMAND } from './commands.js';
 import dotenv from 'dotenv';
 import process from 'node:process';
 
@@ -30,7 +30,7 @@ const response = await fetch(url, {
     Authorization: `Bot ${token}`,
   },
   method: 'PUT',
-  body: JSON.stringify([FISH_COMMAND, STATS_COMMAND]),
+  body: JSON.stringify([FISH_COMMAND, STATS_COMMAND, FACT_COMMAND]),
 });
 
 if (response.ok) {

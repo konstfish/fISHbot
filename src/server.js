@@ -9,9 +9,11 @@ import {
   verifyKey,
   InteractionResponseFlags,
 } from 'discord-interactions';
-import { FISH_COMMAND, STATS_COMMAND } from './commands.js';
+import { FISH_COMMAND, STATS_COMMAND, FACT_COMMAND } from './commands.js';
 
 import { generateFish, generateFishButtons } from './fishing.js';
+
+import { fishFacts } from './fishfacts.js';
 
 import {
   getUserData,
@@ -63,7 +65,6 @@ router.post('/', async (request, env) => {
   if (interaction.type === InteractionType.APPLICATION_COMMAND) {
     switch (interaction.data.name.toLowerCase()) {
       case FISH_COMMAND.name.toLowerCase(): {
-
         const fishList = generateFish();
         const pickFish = Math.floor(Math.random() * fishList.length);
 
@@ -107,6 +108,18 @@ router.post('/', async (request, env) => {
           type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
           data: {
             content: statsMessage,
+          },
+        });
+      }
+      case FACT_COMMAND.name.toLowerCase(): {
+        // pick random entry from fishFacts and return
+        const pickFact = Math.floor(Math.random() * fishFacts.length);
+        const factMessage = fishFacts[pickFact];
+
+        return new JsonResponse({
+          type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+          data: {
+            content: factMessage,
           },
         });
       }

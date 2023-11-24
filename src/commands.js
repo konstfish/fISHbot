@@ -12,3 +12,8 @@ export const STATS_COMMAND = {
   name: 'stats',
   description: 'See your stats!',
 };
+
+export const FACT_COMMAND = {
+  name: 'fishfact',
+  description: 'Get a random fish fact!',
+};
