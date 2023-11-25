@@ -19,6 +19,10 @@ var (
 			Name:        "ping",
 			Description: "Ping Pong",
 		},
+		{
+			Name:        "fish",
+			Description: "Go fishing!",
+		},
 	}
 
 	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
@@ -29,6 +33,21 @@ var (
 					Content: "Pong!",
 				},
 			})
+		},
+		"fish": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
+			})
+
+			buttons := generateFishButtons()
+			_, err := s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
+				Content:         "asdf",
+				Components:      buttons,
+				AllowedMentions: &discordgo.MessageAllowedMentions{},
+			})
+			if err != nil {
+				log.Println(err)
+			}
 		},
 	}
 )
@@ -46,8 +65,20 @@ func init() {
 	s, err = discordgo.New("Bot " + bot_token)
 
 	s.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-		if handler, ok := commandHandlers[i.ApplicationCommandData().Name]; ok {
-			handler(s, i)
+		switch i.Type {
+		case discordgo.InteractionApplicationCommand:
+			if handler, ok := commandHandlers[i.ApplicationCommandData().Name]; ok {
+				handler(s, i)
+			}
+		case discordgo.InteractionMessageComponent:
+			if i.MessageComponentData().CustomID != "" {
+				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseUpdateMessage,
+					Data: &discordgo.InteractionResponseData{
+						Content: "You clicked " + i.MessageComponentData().CustomID,
+					},
+				})
+			}
 		}
 	})
 }
@@ -61,11 +92,10 @@ func main() {
 	log.Println("Adding commands...")
 	registeredCommands := make([]*discordgo.ApplicationCommand, len(commands))
 	for i, v := range commands {
-		cmd, err := s.ApplicationCommandCreate(s.State.User.ID, GuildID, v)
+		registeredCommands[i], err = s.ApplicationCommandCreate(s.State.User.ID, GuildID, v)
 		if err != nil {
-			log.Panicf("Cannot create '%v' command: %v", v.Name, err)
+			log.Fatal("Error creating command,", err)
 		}
-		registeredCommands[i] = cmd
 	}
 
 	defer s.Close()
