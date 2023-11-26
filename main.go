@@ -39,6 +39,8 @@ var (
 				Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
 			})
 
+			userExists(i.Member.User)
+
 			buttons := generateFishButtons()
 			_, err := s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
 				Content:         "asdf",
