@@ -55,16 +55,13 @@ var (
 )
 
 func init() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
+	godotenv.Load()
 
 	bot_token := os.Getenv("DISCORD_TOKEN")
 
 	log.Println(bot_token)
 
-	s, err = discordgo.New("Bot " + bot_token)
+	s, _ = discordgo.New("Bot " + bot_token)
 
 	s.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		switch i.Type {
