@@ -1,0 +1,12 @@
+version: '3.7'
+services:
+  streaks_api:
+    #build: ./
+    image: ghcr.io/konstfish/fishbot:latest
+    ports:
+      - 4000:4000
+    volumes:
+      - ./db:/db
+    environment:
+      - DISCORD_TOKEN=key
+    restart: always
