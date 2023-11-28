@@ -1,9 +1,13 @@
 package main
 
 import (
+	"fmt"
 	"log"
+	"math/rand"
 	"os"
 	"os/signal"
+	"strconv"
+	"strings"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
@@ -39,17 +43,28 @@ var (
 				Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
 			})
 
+			// register user
 			userExists(i.Member.User)
 
-			buttons := generateFishButtons()
-			_, err := s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
-				Content:         "asdf",
+			// setup response message
+			fish := generateFish()
+			buttons := generateFishButtons(fish, i.Member.User.ID)
+
+			message, err := s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
+				Content:         fmt.Sprintf("%s started fishing with a level %d 🎣", i.Member.User.Username, 1),
 				Components:      buttons,
 				AllowedMentions: &discordgo.MessageAllowedMentions{},
 			})
 			if err != nil {
 				log.Println(err)
 			}
+
+			sleep := rand.Intn(5) + 1
+			fishIdx := rand.Intn(len(fish))
+
+			registerFishing(i.Member.User.ID, fishIdx, sleep)
+
+			go fishButtonHandler(s, i, message, sleep, fish[fishIdx])
 		},
 	}
 )
@@ -71,12 +86,66 @@ func init() {
 			}
 		case discordgo.InteractionMessageComponent:
 			if i.MessageComponentData().CustomID != "" {
-				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				parts := strings.Split(i.MessageComponentData().CustomID, "-")
+				if len(parts) != 2 {
+					return
+				}
+
+				userId := parts[0]
+				fishIdx, err := strconv.Atoi(parts[1])
+				if err != nil {
+					fmt.Println("Conversion error:", err)
+					return
+				}
+
+				if i.Member.User.ID != userId {
+					s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+						Type: discordgo.InteractionResponseChannelMessageWithSource,
+						Data: &discordgo.InteractionResponseData{
+							Content: "Don't try to catch someone else's fish!",
+							Flags:   discordgo.MessageFlagsEphemeral,
+						},
+					})
+
+					return
+				}
+
+				success, reason := checkFishing(i.Member.User.ID, fishIdx)
+
+				fmt.Println(i.MessageComponentData().ComponentType)
+				fmt.Println(i.MessageComponentData().Resolved)
+				fmt.Println(i.MessageComponentData().Values)
+
+				if success {
+					s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+						Type: discordgo.InteractionResponseUpdateMessage,
+						Data: &discordgo.InteractionResponseData{
+							Content: "You caught a fish!",
+						},
+					})
+				} else {
+					var message string
+					switch reason {
+					case 1:
+						message = "Wrong fish :("
+					case 2:
+						message = "Too slow :("
+					}
+
+					s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+						Type: discordgo.InteractionResponseUpdateMessage,
+						Data: &discordgo.InteractionResponseData{
+							Content: message,
+						},
+					})
+				}
+
+				/*s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseUpdateMessage,
 					Data: &discordgo.InteractionResponseData{
 						Content: "You clicked " + i.MessageComponentData().CustomID,
 					},
-				})
+				})*/
 			}
 		}
 	})
@@ -101,5 +170,6 @@ func main() {
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt)
 	<-stop
+	closeDB()
 	log.Println("Graceful shutdown")
 }

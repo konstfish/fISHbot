@@ -33,17 +33,14 @@ func contains(slice []string, val string) bool {
 	return false
 }
 
-func generateFishButtons() []discordgo.MessageComponent {
-	fish := generateFish()
-
+func generateFishButtons(fish []string, userId string) []discordgo.MessageComponent {
 	var buttons []discordgo.MessageComponent
 	var actionRowComponents []discordgo.MessageComponent
 
 	for i, v := range fish {
-		// create button with "f"+index as custom id
 		button := discordgo.Button{
 			Label:    v,
-			CustomID: fmt.Sprintf("f%d", i),
+			CustomID: fmt.Sprintf("%s-%d", userId, i),
 			Style:    discordgo.PrimaryButton,
 		}
 		actionRowComponents = append(actionRowComponents, button)
@@ -54,4 +51,20 @@ func generateFishButtons() []discordgo.MessageComponent {
 	})
 
 	return buttons
+}
+
+func fishButtonHandler(s *discordgo.Session, i *discordgo.InteractionCreate, message *discordgo.Message, sleep int, fish string) {
+	sleeptime := time.Duration(sleep) * time.Second
+	time.Sleep(sleeptime)
+
+	messageText := fmt.Sprintf("React with %s!", fish)
+
+	_, err := s.FollowupMessageEdit(i.Interaction, message.ID, &discordgo.WebhookEdit{
+		Content:         &messageText,
+		Components:      nil,
+		AllowedMentions: &discordgo.MessageAllowedMentions{},
+	})
+	if err != nil {
+		fmt.Println(err)
+	}
 }
