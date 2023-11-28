@@ -16,8 +16,6 @@ import (
 var s *discordgo.Session
 
 var (
-	GuildID = "1174873885490020362"
-
 	commands = []*discordgo.ApplicationCommand{
 		{
 			Name:        "ping",
@@ -51,15 +49,22 @@ var (
 				Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
 			})
 
-			// register user
-			userExists(i.Member.User)
+			var discorduser *discordgo.User
+			if i.GuildID == "" {
+				discorduser = i.User
+			} else {
+				discorduser = discorduser
+			}
+
+			userExists(discorduser)
+			var user UserStats = getUserStats(discorduser.ID)
 
 			// setup response message
 			fish := generateFish()
-			buttons := generateFishButtons(fish, i.Member.User.ID)
+			buttons := generateFishButtons(fish, discorduser.ID)
 
 			message, err := s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
-				Content:         fmt.Sprintf("%s started fishing with a level %d 🎣", i.Member.User.Username, 1),
+				Content:         fmt.Sprintf("%s started fishing with a level %d 🎣", discorduser.Username, user.RodLevel),
 				Components:      buttons,
 				AllowedMentions: &discordgo.MessageAllowedMentions{},
 			})
@@ -70,7 +75,7 @@ var (
 			sleep := rand.Intn(5) + 1
 			fishIdx := rand.Intn(len(fish))
 
-			registerFishing(i.Member.User.ID, fishIdx, fish[fishIdx], sleep)
+			registerFishing(discorduser.ID, fishIdx, fish[fishIdx], sleep)
 
 			go fishButtonHandler(s, i, message, sleep, fish[fishIdx])
 		},
@@ -79,8 +84,15 @@ var (
 				Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
 			})
 
-			userExists(i.Member.User)
-			var user UserStats = getUserStats(i.Member.User.ID)
+			var discorduser *discordgo.User
+			if i.GuildID == "" {
+				discorduser = i.User
+			} else {
+				discorduser = discorduser
+			}
+
+			userExists(discorduser)
+			var user UserStats = getUserStats(discorduser.ID)
 
 			/*
 				🎣 Rod Level: 3
@@ -103,8 +115,15 @@ var (
 				Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
 			})
 
-			userExists(i.Member.User)
-			var user UserStats = getUserStats(i.Member.User.ID)
+			var discorduser *discordgo.User
+			if i.GuildID == "" {
+				discorduser = i.User
+			} else {
+				discorduser = discorduser
+			}
+
+			userExists(discorduser)
+			var user UserStats = getUserStats(discorduser.ID)
 
 			_, err := s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
 				Content: fmt.Sprintf("You have %d bait and a level %d fishing rod! https://tenor.com/view/morshu-zelda-you-will-buy-from-me-gif-16437133", user.Bait, user.RodLevel),
@@ -145,7 +164,14 @@ func init() {
 					return
 				}
 
-				if i.Member.User.ID != userId {
+				var discorduser *discordgo.User
+				if i.GuildID == "" {
+					discorduser = i.User
+				} else {
+					discorduser = discorduser
+				}
+
+				if discorduser.ID != userId {
 					s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 						Type: discordgo.InteractionResponseChannelMessageWithSource,
 						Data: &discordgo.InteractionResponseData{
@@ -157,8 +183,8 @@ func init() {
 					return
 				}
 
-				success, reason, fish := checkFishing(i.Member.User.ID, fishIdx)
-				user := getUserStats(i.Member.User.ID)
+				success, reason, fish := checkFishing(discorduser.ID, fishIdx)
+				user := getUserStats(discorduser.ID)
 				rarity := getFishRarity(user.RodLevel, false) // todo implement bait
 
 				// create string for rarity
@@ -220,7 +246,7 @@ func main() {
 	log.Println("Adding commands...")
 	registeredCommands := make([]*discordgo.ApplicationCommand, len(commands))
 	for i, v := range commands {
-		registeredCommands[i], err = s.ApplicationCommandCreate(s.State.User.ID, GuildID, v)
+		registeredCommands[i], err = s.ApplicationCommandCreate(s.State.User.ID, "", v)
 		if err != nil {
 			log.Fatal("Error creating command,", err)
 		}
