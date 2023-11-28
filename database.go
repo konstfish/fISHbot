@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"log"
+	"math/rand"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -58,7 +59,30 @@ func closeDB() {
 }
 
 // userExists checks if a user exists in the database & if not, adds them
-func userExists(user *discordgo.User) {
+func userExists(user *discordgo.User) bool {
+	// check if userid is in table
+	sqlStmt := `
+		SELECT user_id FROM users WHERE user_id = ?;
+	`
+
+	var userId string
+	err := db.QueryRow(sqlStmt, user.ID).Scan(&userId)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			createUser(user.ID, user.Username)
+			createUserFish(user.ID)
+
+			return false
+		} else {
+			log.Printf("%q: %s\n", err, sqlStmt)
+			return false
+		}
+	}
+
+	return true
+}
+
+func createUser(userId string, username string) {
 	sqlStmt := `
 		INSERT INTO users (user_id, username, join_date)
 		VALUES (?, ?, ?)
@@ -66,14 +90,118 @@ func userExists(user *discordgo.User) {
 	`
 
 	// get current date
-	date := time.Now().Format("2006-01-02")
+	date := time.Now().Format("2006-01-02 15:04")
 
 	var err error
-	_, err = db.Exec(sqlStmt, user.ID, user.Username, date)
+	_, err = db.Exec(sqlStmt, userId, username, date)
 	if err != nil {
 		log.Printf("%q: %s\n", err, sqlStmt)
 		return
 	}
+}
+
+func createUserFish(userId string) {
+	sqlStmt := `
+		INSERT INTO fish (user_id, rod_level, total_caught, common_caught, rare_caught, epic_caught, legendary_caught)
+		VALUES (?, ?, ?, ?, ?, ?, ?)
+		ON CONFLICT(user_id) DO NOTHING;
+	`
+
+	var err error
+	_, err = db.Exec(sqlStmt, userId, 1, 0, 0, 0, 0, 0)
+	if err != nil {
+		log.Printf("%q: %s\n", err, sqlStmt)
+		return
+	}
+}
+
+// TODO fill user stats table
+
+// getUserStats returns a user's stats from the database
+func getUserStats(userId string) (user UserStats) {
+	sqlStmt := `
+		SELECT join_date, rod_level, total_caught, common_caught, rare_caught, epic_caught, legendary_caught FROM users
+		INNER JOIN fish ON users.user_id = fish.user_id
+		WHERE users.user_id = ?;
+	`
+
+	err := db.QueryRow(sqlStmt, userId).Scan(&user.JoinDate, &user.RodLevel, &user.TotalCaught, &user.CommonCaught, &user.RareCaught, &user.EpicCaught, &user.LegendaryCaught)
+	if err != nil {
+		log.Printf("%q: %s\n", err, sqlStmt)
+		return
+	}
+
+	user.UserID = userId
+
+	return user
+}
+
+// updateUserStats, updates a user's existing stats in the database when they catch a fish. the rod level increases by 1 every 10 fish caught, the function recieves the fish rarity
+func updateUserStats(statsCur UserStats, rarity int) {
+	statsCur.TotalCaught += 1
+	// increase rod level every 10 fish caught
+	if statsCur.TotalCaught%10 == 0 {
+		statsCur.RodLevel += 1
+	}
+
+	// add a fish to the correct rarity
+	switch rarity {
+	case 0:
+		statsCur.CommonCaught += 1
+	case 1:
+		statsCur.RareCaught += 1
+	case 2:
+		statsCur.EpicCaught += 1
+	case 3:
+		statsCur.LegendaryCaught += 1
+	}
+
+	// fill updated statsCur into database
+	sqlStmt := `
+		UPDATE fish SET rod_level = ?, total_caught = ?, common_caught = ?, rare_caught = ?, epic_caught = ?, legendary_caught = ?
+		WHERE user_id = ?;
+	`
+
+	_, err := db.Exec(sqlStmt, statsCur.RodLevel, statsCur.TotalCaught, statsCur.CommonCaught, statsCur.RareCaught, statsCur.EpicCaught, statsCur.LegendaryCaught, statsCur.UserID)
+	if err != nil {
+		log.Printf("%q: %s\n", err, sqlStmt)
+		return
+	}
+}
+
+func getFishRarity(rodLevel int, bait bool) int {
+	chances := map[int]float64{
+		0: 70.0, // Common
+		1: 20.0, // Rare
+		2: 8.0,  // Epic
+		3: 2.0,  // Legendary
+	}
+
+	for i := 0; i < rodLevel; i++ {
+		chances[0] *= 0.95
+		chances[1] += 0.03
+		chances[2] += 0.01
+		chances[3] += 0.01
+	}
+
+	if bait {
+		chances[0] *= 0.9
+		chances[1] += 0.05
+		chances[2] += 0.03
+		chances[3] += 0.02
+	}
+
+	fishRng := rand.Float64() * 100
+
+	var cumulativeChance float64
+	for rarity, chance := range chances {
+		cumulativeChance += chance
+		if fishRng <= cumulativeChance {
+			return rarity
+		}
+	}
+
+	return 0
 }
 
 // insert or replace a line into the fishing table

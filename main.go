@@ -25,7 +25,15 @@ var (
 		},
 		{
 			Name:        "fish",
-			Description: "Go fishing!",
+			Description: "Catch a fish!",
+		},
+		{
+			Name:        "stats",
+			Description: "View your fishing stats!",
+		},
+		{
+			Name:        "shop",
+			Description: "Trade your fish for bait and rods!",
 		},
 	}
 
@@ -65,6 +73,22 @@ var (
 			registerFishing(i.Member.User.ID, fishIdx, fish[fishIdx], sleep)
 
 			go fishButtonHandler(s, i, message, sleep, fish[fishIdx])
+		},
+		"stats": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
+			})
+
+			userExists(i.Member.User)
+
+			var user UserStats = getUserStats(i.Member.User.ID)
+
+			_, err := s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
+				Content: fmt.Sprintf("You have caught %d fish!", user.TotalCaught),
+			})
+			if err != nil {
+				log.Println(err)
+			}
 		},
 	}
 )
@@ -111,14 +135,31 @@ func init() {
 				}
 
 				success, reason, fish := checkFishing(i.Member.User.ID, fishIdx)
+				user := getUserStats(i.Member.User.ID)
+				rarity := getFishRarity(user.RodLevel, false) // todo implement bait
+
+				// create string for rarity
+				var rarityString string
+				switch rarity {
+				case 0:
+					rarityString = "common"
+				case 1:
+					rarityString = "rare"
+				case 2:
+					rarityString = "epic"
+				case 3:
+					rarityString = "legendary"
+				}
 
 				if success {
 					s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 						Type: discordgo.InteractionResponseUpdateMessage,
 						Data: &discordgo.InteractionResponseData{
-							Content: fmt.Sprintf("You caught a %s!", fish),
+							Content: fmt.Sprintf("You caught a %s %s!", rarityString, fish),
 						},
 					})
+
+					updateUserStats(user, reason)
 				} else {
 					var message string
 					switch reason {

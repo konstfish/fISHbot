@@ -12,7 +12,6 @@ func generateFish() []string {
 	fishList := []string{"🐟", "🐡", "🐠", "🦈", "🐳", "🐬", "🦀", "🦐", "🦑"}
 	var fish []string
 
-	rand.Seed(time.Now().UnixNano())
 	for i := 0; i < 5; i++ {
 		randomFish := fishList[rand.Intn(len(fishList))]
 		for contains(fish, randomFish) {
