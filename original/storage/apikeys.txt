@@ -1,3 +1,0 @@
-App Name: fISHbot
-App URL: https://konst.fish/bot
-API Key: 84d15a0b2e5c0930de9126cccb13c9cb96909a07
