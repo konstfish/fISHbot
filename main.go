@@ -53,7 +53,7 @@ var (
 			if i.GuildID == "" {
 				discorduser = i.User
 			} else {
-				discorduser = discorduser
+				discorduser = i.Member.User
 			}
 
 			userExists(discorduser)
@@ -88,7 +88,7 @@ var (
 			if i.GuildID == "" {
 				discorduser = i.User
 			} else {
-				discorduser = discorduser
+				discorduser = i.Member.User
 			}
 
 			userExists(discorduser)
@@ -119,7 +119,7 @@ var (
 			if i.GuildID == "" {
 				discorduser = i.User
 			} else {
-				discorduser = discorduser
+				discorduser = i.Member.User
 			}
 
 			userExists(discorduser)
@@ -168,7 +168,7 @@ func init() {
 				if i.GuildID == "" {
 					discorduser = i.User
 				} else {
-					discorduser = discorduser
+					discorduser = i.Member.User
 				}
 
 				if discorduser.ID != userId {
