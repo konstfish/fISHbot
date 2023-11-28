@@ -1,7 +1,0 @@
-discord
-googletrans
-coinmarketcap
-urbandictionary
-osuapi
-overwatch
-wikipedia
