@@ -62,7 +62,7 @@ var (
 			sleep := rand.Intn(5) + 1
 			fishIdx := rand.Intn(len(fish))
 
-			registerFishing(i.Member.User.ID, fishIdx, sleep)
+			registerFishing(i.Member.User.ID, fishIdx, fish[fishIdx], sleep)
 
 			go fishButtonHandler(s, i, message, sleep, fish[fishIdx])
 		},
@@ -110,17 +110,13 @@ func init() {
 					return
 				}
 
-				success, reason := checkFishing(i.Member.User.ID, fishIdx)
-
-				fmt.Println(i.MessageComponentData().ComponentType)
-				fmt.Println(i.MessageComponentData().Resolved)
-				fmt.Println(i.MessageComponentData().Values)
+				success, reason, fish := checkFishing(i.Member.User.ID, fishIdx)
 
 				if success {
 					s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 						Type: discordgo.InteractionResponseUpdateMessage,
 						Data: &discordgo.InteractionResponseData{
-							Content: "You caught a fish!",
+							Content: fmt.Sprintf("You caught a %s!", fish),
 						},
 					})
 				} else {

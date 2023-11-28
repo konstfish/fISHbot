@@ -38,6 +38,7 @@ func init() {
 		CREATE TABLE IF NOT EXISTS fishing (
 			user_id TEXT PRIMARY KEY,
 			pick_index INTEGER,
+			pick_fish TEXT,
 			date INTEGER,
 			FOREIGN KEY (user_id) REFERENCES users(user_id)
 		);
@@ -76,18 +77,18 @@ func userExists(user *discordgo.User) {
 }
 
 // insert or replace a line into the fishing table
-func registerFishing(userId string, fishIdx int, sleep int) {
+func registerFishing(userId string, fishIdx int, fishType string, sleep int) {
 	sqlStmt := `
-		INSERT INTO fishing (user_id, pick_index, date)
-		VALUES (?, ?, ?)
-		ON CONFLICT(user_id) DO UPDATE SET pick_index = ?, date = ?;
+		INSERT INTO fishing (user_id, pick_index, pick_fish, date)
+		VALUES (?, ?, ?, ?)
+		ON CONFLICT(user_id) DO UPDATE SET pick_index = ?, pick_fish = ?, date = ?;
 	`
 
 	// get current date in unixtime & add sleep time int
 	date := time.Now().Add(time.Duration(sleep) * time.Second).Unix()
 
 	var err error
-	_, err = db.Exec(sqlStmt, userId, fishIdx, date, fishIdx, date)
+	_, err = db.Exec(sqlStmt, userId, fishIdx, fishType, date, fishIdx, fishType, date)
 	if err != nil {
 		log.Printf("%q: %s\n", err, sqlStmt)
 		return
@@ -95,31 +96,32 @@ func registerFishing(userId string, fishIdx int, sleep int) {
 }
 
 // funcion checkFishing(userId string, fishIdx int) that returns either true or false if the correct index was chosen for the user & if no more than 2 seconds have passed since the last fishing attempt
-func checkFishing(userId string, fishIdx int) (success bool, reason int) {
+func checkFishing(userId string, fishIdx int) (success bool, reason int, fishType string) {
 	sqlStmt := `
-		SELECT pick_index, date FROM fishing WHERE user_id = ?;
+		SELECT pick_index, pick_fish, date FROM fishing WHERE user_id = ?;
 	`
 
 	var (
 		pickIndex int
+		fish      string
 		date      int64
 	)
 
-	err := db.QueryRow(sqlStmt, userId).Scan(&pickIndex, &date)
+	err := db.QueryRow(sqlStmt, userId).Scan(&pickIndex, &fish, &date)
 	if err != nil {
 		log.Printf("%q: %s\n", err, sqlStmt)
-		return false, 0
+		return false, 0, ""
 	}
 
 	// check if more than 2 seconds have passed
 	if time.Now().Unix() > date+2 {
-		return false, 2
+		return false, 2, fish
 	}
 
 	// check if correct index was chosen
 	if pickIndex != fishIdx {
-		return false, 1
+		return false, 1, fish
 	}
 
-	return true, 0
+	return true, 0, fish
 }
