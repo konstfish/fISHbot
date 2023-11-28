@@ -80,11 +80,34 @@ var (
 			})
 
 			userExists(i.Member.User)
+			var user UserStats = getUserStats(i.Member.User.ID)
 
+			/*
+				🎣 Rod Level: 3
+				🐟 Fish Caught: 26
+				⭐ Common: 13
+				💠 Rare: 11
+				🌀 Epic: 2
+				🌌 Legendary: 0
+			*/
+
+			_, err := s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
+				Content: fmt.Sprintf("🎣 Rod Level: %d\n🪝 Bait Available: %d\n🐟 Total Fish Caught: %d\n⭐ Common: %d\n💠 Rare: %d\n🌀 Epic: %d\n🌌 Legendary: %d", user.RodLevel, user.Bait, user.TotalCaught, user.CommonCaught, user.RareCaught, user.EpicCaught, user.LegendaryCaught),
+			})
+			if err != nil {
+				log.Println(err)
+			}
+		},
+		"shop": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
+			})
+
+			userExists(i.Member.User)
 			var user UserStats = getUserStats(i.Member.User.ID)
 
 			_, err := s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
-				Content: fmt.Sprintf("You have caught %d fish!", user.TotalCaught),
+				Content: fmt.Sprintf("You have %d bait and a level %d fishing rod! https://tenor.com/view/morshu-zelda-you-will-buy-from-me-gif-16437133", user.Bait, user.RodLevel),
 			})
 			if err != nil {
 				log.Println(err)

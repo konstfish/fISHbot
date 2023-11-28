@@ -29,6 +29,7 @@ func init() {
 		CREATE TABLE IF NOT EXISTS fish (
 			user_id TEXT PRIMARY KEY,
 			rod_level INTEGER,
+			bait INTEGER,
 			total_caught INTEGER,
 			common_caught INTEGER,
 			rare_caught INTEGER,
@@ -102,13 +103,13 @@ func createUser(userId string, username string) {
 
 func createUserFish(userId string) {
 	sqlStmt := `
-		INSERT INTO fish (user_id, rod_level, total_caught, common_caught, rare_caught, epic_caught, legendary_caught)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO fish (user_id, rod_level, bait, total_caught, common_caught, rare_caught, epic_caught, legendary_caught)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT(user_id) DO NOTHING;
 	`
 
 	var err error
-	_, err = db.Exec(sqlStmt, userId, 1, 0, 0, 0, 0, 0)
+	_, err = db.Exec(sqlStmt, userId, 1, 0, 0, 0, 0, 0, 0)
 	if err != nil {
 		log.Printf("%q: %s\n", err, sqlStmt)
 		return
@@ -120,12 +121,12 @@ func createUserFish(userId string) {
 // getUserStats returns a user's stats from the database
 func getUserStats(userId string) (user UserStats) {
 	sqlStmt := `
-		SELECT join_date, rod_level, total_caught, common_caught, rare_caught, epic_caught, legendary_caught FROM users
+		SELECT join_date, rod_level, bait, total_caught, common_caught, rare_caught, epic_caught, legendary_caught FROM users
 		INNER JOIN fish ON users.user_id = fish.user_id
 		WHERE users.user_id = ?;
 	`
 
-	err := db.QueryRow(sqlStmt, userId).Scan(&user.JoinDate, &user.RodLevel, &user.TotalCaught, &user.CommonCaught, &user.RareCaught, &user.EpicCaught, &user.LegendaryCaught)
+	err := db.QueryRow(sqlStmt, userId).Scan(&user.JoinDate, &user.RodLevel, &user.Bait, &user.TotalCaught, &user.CommonCaught, &user.RareCaught, &user.EpicCaught, &user.LegendaryCaught)
 	if err != nil {
 		log.Printf("%q: %s\n", err, sqlStmt)
 		return
