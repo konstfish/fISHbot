@@ -1,1 +1,0 @@
-@commands.is_nsfw()
