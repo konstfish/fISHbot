@@ -104,7 +104,9 @@ var (
 			*/
 
 			_, err := s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
-				Content: fmt.Sprintf("🎣 Rod Level: %d\n🪝 Bait Available: %d\n🐟 Total Fish Caught: %d\n⭐ Common: %d\n💠 Rare: %d\n🌀 Epic: %d\n🌌 Legendary: %d", user.RodLevel, user.Bait, user.TotalCaught, user.CommonCaught, user.RareCaught, user.EpicCaught, user.LegendaryCaught),
+				Content: fmt.Sprintf("🎣 Rod Level: %d\n🪝 Bait Available: %d\n🐟 Total Fish Caught: %d\n⭐ Common: %d\n💠 Rare: %d\n🌀 Epic: %d\n🌌 Legendary: %d",
+					user.RodLevel, user.Bait, user.TotalCaught, user.CommonCaught,
+					user.RareCaught, user.EpicCaught, user.LegendaryCaught),
 			})
 			if err != nil {
 				log.Println(err)
@@ -208,7 +210,8 @@ func init() {
 						},
 					})
 
-					updateUserStats(user, reason)
+					updateUserStats(user, rarity)
+
 				} else {
 					var message string
 					switch reason {

@@ -109,14 +109,12 @@ func createUserFish(userId string) {
 	`
 
 	var err error
-	_, err = db.Exec(sqlStmt, userId, 1, 0, 0, 0, 0, 0, 0)
+	_, err = db.Exec(sqlStmt, userId, 1, 10, 0, 0, 0, 0, 0)
 	if err != nil {
 		log.Printf("%q: %s\n", err, sqlStmt)
 		return
 	}
 }
-
-// TODO fill user stats table
 
 // getUserStats returns a user's stats from the database
 func getUserStats(userId string) (user UserStats) {
@@ -137,7 +135,7 @@ func getUserStats(userId string) (user UserStats) {
 	return user
 }
 
-// updateUserStats, updates a user's existing stats in the database when they catch a fish. the rod level increases by 1 every 10 fish caught, the function recieves the fish rarity
+// updateUserStats, updates a user's existing stats in the database when they catch a fish
 func updateUserStats(statsCur UserStats, rarity int) {
 	statsCur.TotalCaught += 1
 	// increase rod level every 10 fish caught
