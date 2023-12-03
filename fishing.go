@@ -39,7 +39,7 @@ func generateFishButtons(fish []string, userId string) []discordgo.MessageCompon
 	for i, v := range fish {
 		button := discordgo.Button{
 			Label:    v,
-			CustomID: fmt.Sprintf("%s-%d", userId, i),
+			CustomID: fmt.Sprintf("fish-%s-%d", userId, i),
 			Style:    discordgo.PrimaryButton,
 		}
 		actionRowComponents = append(actionRowComponents, button)

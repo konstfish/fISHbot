@@ -4,6 +4,7 @@ type UserStats struct {
 	UserID          string
 	JoinDate        string
 	RodLevel        int
+	Money           int
 	Bait            int
 	TotalCaught     int
 	CommonCaught    int

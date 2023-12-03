@@ -28,6 +28,7 @@ func init() {
 		);
 		CREATE TABLE IF NOT EXISTS fish (
 			user_id TEXT PRIMARY KEY,
+			money INTEGER DEFAULT 0,
 			rod_level INTEGER,
 			bait INTEGER,
 			total_caught INTEGER,
@@ -119,12 +120,12 @@ func createUserFish(userId string) {
 // getUserStats returns a user's stats from the database
 func getUserStats(userId string) (user UserStats) {
 	sqlStmt := `
-		SELECT join_date, rod_level, bait, total_caught, common_caught, rare_caught, epic_caught, legendary_caught FROM users
+		SELECT join_date, rod_level, money, bait, total_caught, common_caught, rare_caught, epic_caught, legendary_caught FROM users
 		INNER JOIN fish ON users.user_id = fish.user_id
 		WHERE users.user_id = ?;
 	`
 
-	err := db.QueryRow(sqlStmt, userId).Scan(&user.JoinDate, &user.RodLevel, &user.Bait, &user.TotalCaught, &user.CommonCaught, &user.RareCaught, &user.EpicCaught, &user.LegendaryCaught)
+	err := db.QueryRow(sqlStmt, userId).Scan(&user.JoinDate, &user.RodLevel, &user.Money, &user.Bait, &user.TotalCaught, &user.CommonCaught, &user.RareCaught, &user.EpicCaught, &user.LegendaryCaught)
 	if err != nil {
 		log.Printf("%q: %s\n", err, sqlStmt)
 		return
@@ -137,31 +138,41 @@ func getUserStats(userId string) (user UserStats) {
 
 // updateUserStats, updates a user's existing stats in the database when they catch a fish
 func updateUserStats(statsCur UserStats, rarity int) {
-	statsCur.TotalCaught += 1
-	// increase rod level every 10 fish caught
-	if statsCur.TotalCaught%10 == 0 {
-		statsCur.RodLevel += 1
+	if rarity != -1 {
+		statsCur.TotalCaught += 1
+		// increase rod level every 10 fish caught
+		if statsCur.TotalCaught%10 == 0 {
+			statsCur.RodLevel += 1
+		}
+
+		// add a fish to the correct rarity
+		switch rarity {
+		case 0:
+			statsCur.CommonCaught += 1
+			statsCur.Money += 1
+		case 1:
+			statsCur.RareCaught += 1
+			statsCur.Money += 3
+		case 2:
+			statsCur.EpicCaught += 1
+			statsCur.Money += 5
+		case 3:
+			statsCur.LegendaryCaught += 1
+			statsCur.Money += 10
+		}
 	}
 
-	// add a fish to the correct rarity
-	switch rarity {
-	case 0:
-		statsCur.CommonCaught += 1
-	case 1:
-		statsCur.RareCaught += 1
-	case 2:
-		statsCur.EpicCaught += 1
-	case 3:
-		statsCur.LegendaryCaught += 1
+	if statsCur.Bait > 0 {
+		statsCur.Bait -= 1
 	}
 
 	// fill updated statsCur into database
 	sqlStmt := `
-		UPDATE fish SET rod_level = ?, total_caught = ?, common_caught = ?, rare_caught = ?, epic_caught = ?, legendary_caught = ?
+		UPDATE fish SET rod_level = ?, money = ?, bait = ?, total_caught = ?, common_caught = ?, rare_caught = ?, epic_caught = ?, legendary_caught = ?
 		WHERE user_id = ?;
 	`
 
-	_, err := db.Exec(sqlStmt, statsCur.RodLevel, statsCur.TotalCaught, statsCur.CommonCaught, statsCur.RareCaught, statsCur.EpicCaught, statsCur.LegendaryCaught, statsCur.UserID)
+	_, err := db.Exec(sqlStmt, statsCur.RodLevel, statsCur.Money, statsCur.Bait, statsCur.TotalCaught, statsCur.CommonCaught, statsCur.RareCaught, statsCur.EpicCaught, statsCur.LegendaryCaught, statsCur.UserID)
 	if err != nil {
 		log.Printf("%q: %s\n", err, sqlStmt)
 		return
@@ -251,4 +262,53 @@ func checkFishing(userId string, fishIdx int) (success bool, reason int, fishTyp
 	}
 
 	return true, 0, fish
+}
+
+// 💰 Price List:\n - 2 Bait for 1\n - 5 Bait for 2\n - 10 Bait for 4",
+func buyBait(userId string, bait int) (success bool, reason int) {
+	user := getUserStats(userId)
+
+	log.Println(userId, bait)
+
+	var amount int
+	var price int
+
+	switch bait {
+	case 1:
+		price = 1
+		if user.Money < price {
+			return false, 1
+		}
+		amount = 2
+	case 2:
+		price = 2
+		if user.Money < price {
+			return false, 1
+		}
+		amount = 5
+	case 3:
+		price = 4
+		if user.Money < price {
+			return false, 1
+		}
+		amount = 10
+	}
+
+	log.Println(amount, price)
+
+	// update bait and money in user table
+	user.Bait += amount
+	user.Money -= price
+
+	sqlStmt := `
+		UPDATE fish SET bait = ?, money = ? WHERE user_id = ?;
+	`
+
+	_, err := db.Exec(sqlStmt, user.Bait, user.Money, userId)
+	if err != nil {
+		log.Printf("%q: %s\n", err, sqlStmt)
+		return false, 2
+	}
+
+	return true, 0
 }
