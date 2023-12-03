@@ -268,6 +268,8 @@ func init() {
 								Flags:   discordgo.MessageFlagsEphemeral,
 							},
 						})
+
+						return
 					}
 
 					success, reason := buyBait(discorduser.ID, chosenIdx)
