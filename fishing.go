@@ -38,7 +38,9 @@ func generateFishButtons(fish []string, userId string) []discordgo.MessageCompon
 
 	for i, v := range fish {
 		button := discordgo.Button{
-			Label:    v,
+			Emoji: discordgo.ComponentEmoji{
+				Name: v,
+			},
 			CustomID: fmt.Sprintf("fish-%s-%d", userId, i),
 			Style:    discordgo.PrimaryButton,
 		}
