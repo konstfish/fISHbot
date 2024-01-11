@@ -137,14 +137,23 @@ var (
 			actionRow := discordgo.ActionsRow{
 				Components: []discordgo.MessageComponent{
 					discordgo.Button{
+						Emoji: discordgo.ComponentEmoji{
+							Name: "🪝",
+						},
 						Label:    "2 Bait",
 						CustomID: fmt.Sprintf("shop-%s-%d", discorduser.ID, 1),
 					},
 					discordgo.Button{
+						Emoji: discordgo.ComponentEmoji{
+							Name: "🪝",
+						},
 						Label:    "5 Bait",
 						CustomID: fmt.Sprintf("shop-%s-%d", discorduser.ID, 2),
 					},
 					discordgo.Button{
+						Emoji: discordgo.ComponentEmoji{
+							Name: "🪝",
+						},
 						Label:    "10 Bait",
 						CustomID: fmt.Sprintf("shop-%s-%d", discorduser.ID, 3),
 					},
