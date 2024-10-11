@@ -4,10 +4,11 @@ import (
 	"database/sql"
 	"log"
 	"math/rand"
+	"os"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
-	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/lib/pq"
 )
 
 var db *sql.DB
@@ -15,16 +16,26 @@ var db *sql.DB
 func init() {
 	var err error
 
-	db, err = sql.Open("sqlite3", "./db/fishbot.db")
+	dbURL := os.Getenv("DATABASE_URL")
+	if dbURL == "" {
+		log.Fatal("DATABASE_URL environment variable is not set")
+	}
+
+	db, err = sql.Open("postgres", dbURL)
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	err = db.Ping()
+	if err != nil {
+		log.Fatal("Failed to connect to database:", err)
 	}
 
 	sqlStmt := `
 		CREATE TABLE IF NOT EXISTS users (
 			user_id TEXT PRIMARY KEY,
 			username TEXT,
-			join_date DATE
+			join_date TIMESTAMP
 		);
 		CREATE TABLE IF NOT EXISTS fish (
 			user_id TEXT PRIMARY KEY,
@@ -42,7 +53,7 @@ func init() {
 			user_id TEXT PRIMARY KEY,
 			pick_index INTEGER,
 			pick_fish TEXT,
-			date INTEGER,
+			date BIGINT,
 			FOREIGN KEY (user_id) REFERENCES users(user_id)
 		);
 	`
@@ -64,7 +75,7 @@ func closeDB() {
 func userExists(user *discordgo.User) bool {
 	// check if userid is in table
 	sqlStmt := `
-		SELECT user_id FROM users WHERE user_id = ?;
+		SELECT user_id FROM users WHERE user_id = $1;
 	`
 
 	var userId string
@@ -73,7 +84,6 @@ func userExists(user *discordgo.User) bool {
 		if err == sql.ErrNoRows {
 			createUser(user.ID, user.Username)
 			createUserFish(user.ID)
-
 			return false
 		} else {
 			log.Printf("%q: %s\n", err, sqlStmt)
@@ -87,15 +97,13 @@ func userExists(user *discordgo.User) bool {
 func createUser(userId string, username string) {
 	sqlStmt := `
 		INSERT INTO users (user_id, username, join_date)
-		VALUES (?, ?, ?)
+		VALUES ($1, $2, $3)
 		ON CONFLICT(user_id) DO NOTHING;
 	`
 
-	// get current date
-	date := time.Now().Format("2006-01-02 15:04")
+	date := time.Now()
 
-	var err error
-	_, err = db.Exec(sqlStmt, userId, username, date)
+	_, err := db.Exec(sqlStmt, userId, username, date)
 	if err != nil {
 		log.Printf("%q: %s\n", err, sqlStmt)
 		return
@@ -105,24 +113,22 @@ func createUser(userId string, username string) {
 func createUserFish(userId string) {
 	sqlStmt := `
 		INSERT INTO fish (user_id, rod_level, bait, total_caught, common_caught, rare_caught, epic_caught, legendary_caught)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		ON CONFLICT(user_id) DO NOTHING;
 	`
 
-	var err error
-	_, err = db.Exec(sqlStmt, userId, 1, 10, 0, 0, 0, 0, 0)
+	_, err := db.Exec(sqlStmt, userId, 1, 10, 0, 0, 0, 0, 0)
 	if err != nil {
 		log.Printf("%q: %s\n", err, sqlStmt)
 		return
 	}
 }
 
-// getUserStats returns a user's stats from the database
 func getUserStats(userId string) (user UserStats) {
 	sqlStmt := `
 		SELECT join_date, rod_level, money, bait, total_caught, common_caught, rare_caught, epic_caught, legendary_caught FROM users
 		INNER JOIN fish ON users.user_id = fish.user_id
-		WHERE users.user_id = ?;
+		WHERE users.user_id = $1;
 	`
 
 	err := db.QueryRow(sqlStmt, userId).Scan(&user.JoinDate, &user.RodLevel, &user.Money, &user.Bait, &user.TotalCaught, &user.CommonCaught, &user.RareCaught, &user.EpicCaught, &user.LegendaryCaught)
@@ -166,10 +172,9 @@ func updateUserStats(statsCur UserStats, rarity int) {
 		statsCur.Bait -= 1
 	}
 
-	// fill updated statsCur into database
 	sqlStmt := `
-		UPDATE fish SET rod_level = ?, money = ?, bait = ?, total_caught = ?, common_caught = ?, rare_caught = ?, epic_caught = ?, legendary_caught = ?
-		WHERE user_id = ?;
+		UPDATE fish SET rod_level = $1, money = $2, bait = $3, total_caught = $4, common_caught = $5, rare_caught = $6, epic_caught = $7, legendary_caught = $8
+		WHERE user_id = $9;
 	`
 
 	_, err := db.Exec(sqlStmt, statsCur.RodLevel, statsCur.Money, statsCur.Bait, statsCur.TotalCaught, statsCur.CommonCaught, statsCur.RareCaught, statsCur.EpicCaught, statsCur.LegendaryCaught, statsCur.UserID)
@@ -218,15 +223,14 @@ func getFishRarity(rodLevel int, bait bool) int {
 func registerFishing(userId string, fishIdx int, fishType string, sleep int) {
 	sqlStmt := `
 		INSERT INTO fishing (user_id, pick_index, pick_fish, date)
-		VALUES (?, ?, ?, ?)
-		ON CONFLICT(user_id) DO UPDATE SET pick_index = ?, pick_fish = ?, date = ?;
+		VALUES ($1, $2, $3, $4)
+		ON CONFLICT(user_id) DO UPDATE SET pick_index = $5, pick_fish = $6, date = $7;
 	`
 
 	// get current date in unixtime & add sleep time int
 	date := time.Now().Add(time.Duration(sleep) * time.Second).Unix()
 
-	var err error
-	_, err = db.Exec(sqlStmt, userId, fishIdx, fishType, date, fishIdx, fishType, date)
+	_, err := db.Exec(sqlStmt, userId, fishIdx, fishType, date, fishIdx, fishType, date)
 	if err != nil {
 		log.Printf("%q: %s\n", err, sqlStmt)
 		return
@@ -236,7 +240,7 @@ func registerFishing(userId string, fishIdx int, fishType string, sleep int) {
 // funcion checkFishing(userId string, fishIdx int) that returns either true or false if the correct index was chosen for the user & if no more than 2 seconds have passed since the last fishing attempt
 func checkFishing(userId string, fishIdx int) (success bool, reason int, fishType string) {
 	sqlStmt := `
-		SELECT pick_index, pick_fish, date FROM fishing WHERE user_id = ?;
+		SELECT pick_index, pick_fish, date FROM fishing WHERE user_id = $1;
 	`
 
 	var (
@@ -301,7 +305,7 @@ func buyBait(userId string, bait int) (success bool, reason int) {
 	user.Money -= price
 
 	sqlStmt := `
-		UPDATE fish SET bait = ?, money = ? WHERE user_id = ?;
+		UPDATE fish SET bait = $1, money = $2 WHERE user_id = $3;
 	`
 
 	_, err := db.Exec(sqlStmt, user.Bait, user.Money, userId)
